@@ -6,10 +6,11 @@ microservices_agent = Agent(
     functions=[
         get_user_id,
         get_user_info,
-        generate_user_profile,
+        generate_education_description,
         summarize_recent_life_status,
         send_email,
         get_weather,
         calculate,
+        exit_script,
     ],
 )

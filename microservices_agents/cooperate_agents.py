@@ -6,7 +6,8 @@ assistant_agent = Agent(
     "1. 使用中文与用户交互。\n"
     "2. 注意，所有的子任务都应该交由其他Agent完成，你只需要协调其他Agent完成任务。不要并行地完成任务。\n"
     "3. 不要利用你的推理能力解决具体的任务，你只需要协调其他Agent完成任务。\n"
-    "4. 接收用户需求后，按照以下步骤处理：\n"
+    "4. 完成子任务拆解后，务必询问用户是否需要调整计划。\n"
+    "5. 接收用户需求后，按照以下步骤处理：\n"
     "   Thought: 思考用户需求的含义和可能需要的步骤。\n"
     "   Action: 将需求拆解为多个子任务，格式如下：\n"
     "   任务1: [描述]\n   任务2: [描述]\n   ...\n"
@@ -29,6 +30,7 @@ assistant_agent = Agent(
     "   Observation: 检查是否有遗漏的部分或需要补充的信息。\n"
     "9. 最后，询问用户是否还有其他需求。\n"
     "始终保持逻辑思考，根据观察结果调整行动，确保高效完成用户需求。",
+    functions=[exit_script],
 )
 
 user_id_agent = Agent(
@@ -59,18 +61,18 @@ user_info_agent = Agent(
     functions=[get_user_info],
 )
 
-generate_user_profile_agent = Agent(
-    name="用户画像助手Agent",
-    instructions="你是一个专注于根据用户信息生成用户画像的Agent。遵循以下指令："
+generate_education_description_agent = Agent(
+    name="院校与专业介绍助手Agent",
+    instructions="你是一个专注于根据用户信息生成院校与专业介绍的Agent。遵循以下指令："
     "1. 使用中文与用户交互。"
     "2. 从历史信息或context_variables中提取用户信息。"
-    "3. 调用generate_user_profile函数生成用户画像。"
-    "4. 将获得的用户画像添加到context_variables中，键名为'user_profile'。"
+    "3. 调用generate_education_description函数生成院校与专业介绍。"
+    "4. 将获得的院校与专业介绍添加到context_variables中，键名为'education_description'。"
     "5. 你只能通过函数调用完成你的工作，不要进行任何推理。"
-    "6. 如果成功生成用户画像，将其作为你的回复内容，然后切换至助手Agent。"
-    "7. 如果无法生成用户画像，告知用户并请求更多信息，不要切换Agent。"
+    "6. 如果成功生成院校与专业介绍，将其作为你的回复内容，然后切换至助手Agent。"
+    "7. 如果无法生成院校与专业介绍，告知用户并请求更多信息，不要切换Agent。"
     "8. 始终确保context_variables中包含最新的信息，以供后续Agent使用。",
-    functions=[generate_user_profile],
+    functions=[generate_education_description],
 )
 
 summarize_recent_life_status_agent = Agent(
@@ -141,9 +143,9 @@ def transfer_to_user_info_agent():
     """立即切换至用户信息助手Agent。"""
     return user_info_agent
 
-def transfer_to_generate_user_profile_agent():
-    """立即切换至用户画像助手Agent。"""
-    return generate_user_profile_agent
+def transfer_to_generate_education_description_agent():
+    """立即切换至院校与专业介绍助手Agent。"""
+    return generate_education_description_agent
 
 def transfer_to_summarize_recent_life_status_agent():
     """立即切换至用户近期生活状态助手Agent。"""
@@ -160,7 +162,7 @@ def transfer_to_get_weather_agent():
 tool_agents = [
     user_id_agent, 
     user_info_agent, 
-    generate_user_profile_agent, 
+    generate_education_description_agent, 
     summarize_recent_life_status_agent, 
     send_email_agent, 
     get_weather_agent, 
@@ -171,7 +173,7 @@ tool_agent_transfer_functions = [
     transfer_to_assistant_agent,
     transfer_to_user_id_agent,
     transfer_to_user_info_agent,
-    transfer_to_generate_user_profile_agent,
+    transfer_to_generate_education_description_agent,
     transfer_to_summarize_recent_life_status_agent,
     transfer_to_send_email_agent,
     transfer_to_get_weather_agent,

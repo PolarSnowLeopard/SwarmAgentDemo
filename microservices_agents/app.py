@@ -8,53 +8,84 @@ def run_demo_with_gradio(starting_agent, context_variables=None, debug=False):
     messages = []
     agent = starting_agent
 
-    def respond(message, history):
+    def respond(message, history, log_output):
         nonlocal agent, messages
+
+        # history是前端聊天窗口的历史信息，messages是访问llm api的对话历史
+        history.append({"role": "user", "content": message})
         messages.append({"role": "user", "content": message})
         
         response_chunks = []
         log_content = []
         
-        # 首先yield用户的消息
-        yield [[message, None]], gr.update()
-        
-        for chunk in client.run(
+        # 首先yield用户的消息,即聊天窗口显示刚刚用户的输入，
+        # 并且log_output为空，同时清除输入框的内容
+        yield ["", history, log_output]
+
+        response = client.run(
             agent=agent,
             messages=messages,
             context_variables=context_variables or {},
             stream=True,
             debug=debug,
-        ):
+        )
+
+        content = ""
+        last_sender = ""
+
+        for chunk in response:
+            if "sender" in chunk:
+                last_sender = chunk["sender"]
+
             if "content" in chunk and chunk["content"] is not None:
-                response_chunks.append(chunk["content"])
-                yield [[message, "".join(response_chunks)]], gr.update()
+                if not content and last_sender:
+                    # 对话窗口中新建一条助手消息
+                    history.append({"role":"assistant", "content":f"<span style='color:blue;'>{last_sender}:</span>"})
+                    last_sender = ""
+                
+                # 流式更新content
+                content += chunk["content"]
+                # 流式更新对话窗口
+                history[-1]['content'] += chunk["content"]
+                yield ["", history, log_output]
             
             if "tool_calls" in chunk and chunk["tool_calls"] is not None:
                 for tool_call in chunk["tool_calls"]:
                     f = tool_call["function"]
-                    name, args = f["name"], f["arguments"]
-                    log_content.append(f"工具调用: {name}({args})")
+                    name = f["name"]
+                    if not name:
+                        continue
+                    history.append({"role":"assistant", "content":""})
+                    history[-1]['content'] += f"<span style='color:blue;'>{last_sender}:</span> <span style='color:purple;'>{name}</span>()\n"
+                    yield ["", history, log_output]
             
-            if debug and "debug" in chunk:
-                log_content.append(f"调试信息: {chunk['debug']}")
-            
-            if log_content:
-                yield [[message, "".join(response_chunks)]], gr.update(value="\n".join(log_content))
+            # if debug and "debug" in chunk:
+            #     log_content.append(f"调试信息: {chunk['debug']}")
 
-        messages.extend([{"role": "assistant", "content": "".join(response_chunks)}])
-        agent = chunk.get("agent", agent)
+            if "delim" in chunk and chunk["delim"] == "end" and content:
+                history[-1]['content'] += "\n"  # End of response message
+                content = ""
+
+            if "response" in chunk:
+                break
+            
+            # if log_content:
+            #     yield [[message, "".join(response_chunks)]], gr.update(value="\n".join(log_content))
+        
+        messages.extend(chunk["response"].messages)
+        agent = chunk["response"].agent
 
     with gr.Blocks() as demo:
-        gr.Markdown("# Swarm Agent Demo")
+        gr.Markdown("# 微服务组合仿真Agent")
         with gr.Row():
             with gr.Column(scale=2):
-                chatbot = gr.Chatbot()
-                msg = gr.Textbox()
+                chatbot = gr.Chatbot(type="messages")
+                msg = gr.Textbox(submit_btn=True)
                 clear = gr.Button("清除对话")
             with gr.Column(scale=1):
                 log_output = gr.Textbox(label="工具调用 & 调试信息", lines=20)
 
-        msg.submit(respond, [msg, chatbot], [chatbot, log_output])
+        msg.submit(respond, [msg, chatbot, log_output], [msg, chatbot, log_output])
         clear.click(lambda: None, None, chatbot, queue=False)
 
     demo.queue()

@@ -145,4 +145,4 @@ def calculate(formula):
 def exit_script():
     """结束与用户的交互。"""
     print("Exiting script...")
-    exit()
+    # exit()

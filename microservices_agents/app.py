@@ -19,6 +19,13 @@ def run_demo_with_gradio(starting_agent, context_variables=None, debug=False):
     messages = []
     agent = starting_agent
 
+    def reset_agent():
+        nonlocal agent, messages
+        agent = starting_agent
+        messages = []
+        # 返回空列表来清除chatbot的对话历史
+        return None, [], None
+
     def respond(message, history, log_output):
         nonlocal agent, messages
 
@@ -113,7 +120,7 @@ def run_demo_with_gradio(starting_agent, context_variables=None, debug=False):
                 log_output = gr.Textbox(label="工具调用 & 调试信息", lines=20)
 
         msg.submit(respond, [msg, chatbot, log_output], [msg, chatbot, log_output])
-        clear.click(lambda: None, None, chatbot, queue=False)
+        clear.click(reset_agent, None, [msg, chatbot, log_output], queue=False)
 
     demo.queue()
     demo.launch()

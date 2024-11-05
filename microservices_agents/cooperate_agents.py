@@ -1,7 +1,7 @@
 from tools import *
 
 assistant_agent = Agent(
-    name="助手Agent",
+    name="微服务组合编排助手",
     instructions="你是一个高效的助手，善于根据用户需求协调其他Agent构建应用。遵循以下ReAct框架进行工作："
     "1. 使用中文与用户交互。\n"
     "2. 注意，所有的子任务都应该交由其他Agent完成，你只需要协调其他Agent完成任务。不要并行地完成任务。\n"
@@ -34,7 +34,7 @@ assistant_agent = Agent(
 )
 
 user_id_agent = Agent(
-    name="用户ID助手Agent",
+    name="用户ID查询Service",
     instructions="你是一个专注于根据给定用户昵称返回用户ID的Agent。遵循以下指令："
     "1. 使用中文与用户交互。"
     "2. 从历史信息或context_variables中提取用户昵称。"
@@ -48,7 +48,7 @@ user_id_agent = Agent(
 )
 
 user_info_agent = Agent(
-    name="用户信息助手Agent",
+    name="用户信息查询Service",
     instructions="你是一个专注于根据给定用户ID返回用户信息的Agent。遵循以下指令："
     "1. 使用中文与用户交互。"
     "2. 从历史信息或context_variables中提取用户ID。"
@@ -62,7 +62,7 @@ user_info_agent = Agent(
 )
 
 generate_education_description_agent = Agent(
-    name="院校与专业介绍助手Agent",
+    name="院校与专业介绍Service",
     instructions="你是一个专注于根据用户信息生成院校与专业介绍的Agent。遵循以下指令："
     "1. 使用中文与用户交互。"
     "2. 从历史信息或context_variables中提取用户信息。"
@@ -76,7 +76,7 @@ generate_education_description_agent = Agent(
 )
 
 summarize_recent_life_status_agent = Agent(
-    name="用户近期生活状态助手Agent",
+    name="用户生活状态总结Service",
     instructions="你是一个专注于根据用户历史发帖记录生成用户近期生活状态的Agent。遵循以下指令："
     "1. 使用中文与用户交互。"
     "2. 从历史信息或context_variables中提取用户信息。"
@@ -90,7 +90,7 @@ summarize_recent_life_status_agent = Agent(
 )
 
 send_email_agent = Agent(
-    name="发送邮件助手Agent",
+    name="邮件发送Service",
     instructions="你是一个专注于根据用户需求发送邮件的Agent。遵循以下指令："
     "1. 使用中文与用户交互。"
     "2. 从历史信息或context_variables中提取用户需求。"
@@ -104,7 +104,7 @@ send_email_agent = Agent(
 )
 
 get_weather_agent = Agent(
-    name="获取天气助手Agent",
+    name="天气查询Service",
     instructions="你是一个专注于根据用户需求获取天气的Agent。遵循以下指令："
     "1. 使用中文与用户交互。"
     "2. 从历史信息或context_variables中提取用户需求。"
@@ -118,7 +118,7 @@ get_weather_agent = Agent(
 )
 
 calculate_agent = Agent(
-    name="计算助手Agent",
+    name="表达式求解Service",
     instructions="你是一个专注于根据用户需求进行计算的Agent。遵循以下指令："
     "1. 使用中文与用户交互。"
     "2. 从历史信息或context_variables中提取用户需求。"
@@ -132,32 +132,36 @@ calculate_agent = Agent(
 )
 
 def transfer_to_assistant_agent():
-    """立即切换至助手Agent."""
+    """立即切换至微服务组合编排助手。"""
     return assistant_agent
 
 def transfer_to_user_id_agent():
-    """立即切换至用户ID助手Agent。"""
+    """立即切换至用户ID查询Service。"""
     return user_id_agent
 
 def transfer_to_user_info_agent():
-    """立即切换至用户信息助手Agent。"""
+    """立即切换至用户信息查询Service。"""
     return user_info_agent
 
 def transfer_to_generate_education_description_agent():
-    """立即切换至院校与专业介绍助手Agent。"""
+    """立即切换至院校与专业介绍Service。"""
     return generate_education_description_agent
 
 def transfer_to_summarize_recent_life_status_agent():
-    """立即切换至用户近期生活状态助手Agent。"""
+    """立即切换至用户生活状态总结Service。"""
     return summarize_recent_life_status_agent
 
 def transfer_to_send_email_agent():
-    """立即切换至发送邮件助手Agent。"""
+    """立即切换至邮件发送Service。"""
     return send_email_agent
 
 def transfer_to_get_weather_agent():
-    """立即切换至获取天气助手Agent。"""
+    """立即切换至天气查询Service。"""
     return get_weather_agent
+
+def transfer_to_calculate_agent():
+    """立即切换至表达式求解Service。"""
+    return calculate_agent
 
 tool_agents = [
     user_id_agent, 
@@ -170,13 +174,13 @@ tool_agents = [
 ]
 
 tool_agent_transfer_functions = [
-    transfer_to_assistant_agent,
     transfer_to_user_id_agent,
     transfer_to_user_info_agent,
     transfer_to_generate_education_description_agent,
     transfer_to_summarize_recent_life_status_agent,
     transfer_to_send_email_agent,
     transfer_to_get_weather_agent,
+    transfer_to_calculate_agent,
 ]
 
 for tool_agent in tool_agents:

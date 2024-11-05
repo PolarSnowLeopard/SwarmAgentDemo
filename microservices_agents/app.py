@@ -8,7 +8,7 @@ from autonomous_agent import microservices_agent
 from cooperate_agents import assistant_agent
 
 def ansi_filter(string):
-    string = string.replace("\033[97m", "")
+    string = string.replace("\033[97m", "") 
     string = string.replace("\033[90m", "")
     string = string.replace("\033[0m", "\n")
 

@@ -4,7 +4,6 @@ import re
 import json
 import gradio as gr
 from swarm import Swarm
-from autonomous_agent import microservices_agent
 from cooperate_agents import assistant_agent
 
 DEMO_INPUT = """目前有哪些已注册的微服务？

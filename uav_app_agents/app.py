@@ -4,29 +4,75 @@ import re
 import json
 import gradio as gr
 from swarm import Swarm
-from autonomous_agent import microservices_agent
-from cooperate_agents import assistant_agent
+from UAV_agents import assistant_agent
+
+import folium
+# ... existing imports ...
 
 DEMO_INPUT = """目前有哪些已注册的微服务？
 
-我需要构建一个app，简单来说，输入一个用户昵称，该应用能够自动查询用户的id和个人信息，并总结用户的院校介绍和近期生活状态，最后发送邮件给用户。请你利用已有微服务进行组合，并以“瀚海雪豹”作为整体的输入进行仿真验证。
+我希望利用已注册的微服务进行组合，以构建一个无人机app。该app主要包含两个功能：1.用户首先通过无人机控制服务和路径规划服务得到无人机飞行路线，再利用控制无人机仿真环境中按照规划后的路径进行飞行 2.仿真环境中无人机的实时视频画面会存储在数据库中，并被用于目标识别以检测火灾，检测的结果会被存储在数据库中，如果识别到火灾则发出警告.
+
+我们假定用户在调用无人机控制服务时输入的起始坐标为(31.3385, 121.5020)，终点坐标为(31.3389, 121.5025)，设定的途经点为(31.3384, 121.5019), (31.3387, 121.5018)和 (31.3384, 121.5023)
 
 请你根据以上的微服务组合逻辑，使用mardown的mermaid语法画出框架图，框架图中的节点应该是微服务的名称。
 """
 
 RESULT_MERMAID = r"""# Result
-```mermaid\ngraph TD;
-A[用户ID查询Service] --> B[用户信息查询Service];
-B --> C[院校与专业介绍Service];
-B --> D[用户生活状态总结Service];
-C --> E[邮件发送Service];
-D --> E;
+```graph TD
+    A[无人机控制微服务] --> B[无人机路径规划微服务]
+    B --> C[无人机飞行模拟微服务]
+    C --> D[无人机飞行视频存储微服务]
+    C --> E[火灾检测微服务]
+    E --> F[火灾检测保存微服务]
+    F --> G{如果发现火灾}
+    G --> |是| H[发出警告]
+    G --> |否| I[继续监控]
 ```
 """
 
-DESIGN_IMG = r"SwarmAgentDemo\microservices_agents\img\workflow.png"
+DESIGN_IMG = r"SwarmAgentDemo\uav_app_agents\img\uav微服务.png"
 
-RESULT_IMG = r"SwarmAgentDemo\microservices_agents\img\microservices.png"
+RESULT_IMG = r"SwarmAgentDemo\uav_app_agents\img\uav_result.png"
+
+def generate_map_with_path(start, end, waypoints):
+    # 创建地图，中心点为起始点
+    m = folium.Map(
+        location=start,
+        zoom_start=18,
+        tiles='OpenStreetMap'
+    )
+    
+    # 计算最短路径
+    shortest_path, shortest_distance = [
+        [31.3385, 121.5020], 
+        [31.3387, 121.5018], 
+        [31.3384, 121.5019], 
+        [31.3384, 121.5023], 
+        [31.3389, 121.5025]
+    ], 160.67
+    
+    # 在地图上绘制路径
+    folium.PolyLine(locations=shortest_path, color='blue').add_to(m)
+    
+    # 添加起始点和终止点标记
+    folium.Marker(location=start, popup="起始点", icon=folium.Icon(color='green')).add_to(m)
+    folium.Marker(location=end, popup="终止点", icon=folium.Icon(color='red')).add_to(m)
+    
+    # 添加途经点标记
+    for waypoint in waypoints:
+        folium.Marker(location=waypoint, popup="途经点", icon=folium.Icon(color='orange')).add_to(m)
+    
+    map_html = m._repr_html_()
+    return map_html
+
+def parse_points(points_str):
+    """解析输入的坐标字符串为列表"""
+    points = []
+    for point_str in points_str.split('\n'):
+        lat, lon = map(float, point_str.split(','))
+        points.append((lat, lon))
+    return points
 
 def ansi_filter(string):
     string = string.replace("\033[97m", "") 
@@ -131,17 +177,34 @@ def run_demo_with_gradio(starting_agent, context_variables=None, debug=False):
             sys.stdout = old_stdout
 
     with gr.Blocks() as demo:
-        gr.Markdown("# 微服务组合仿真Agent")
+        gr.Markdown("# 微服务组合仿真Agent——无人机demo")
         with gr.Row():
             with gr.Column(scale=1):
-                gr.Textbox(label="示例输入", value=DEMO_INPUT, lines=25)
+                # 添加地图显示功能
+                gr.Interface(
+                    fn=lambda start, end, waypoints: generate_map_with_path(
+                        parse_points(start)[0],
+                        parse_points(end)[0],
+                        parse_points(waypoints)
+                    ),
+                    inputs=[
+                        gr.Textbox(label="起点 (格式: lat,lon)", value="31.3385, 121.5020"),
+                        gr.Textbox(label="终点 (格式: lat,lon)", value="31.3389, 121.5025"),
+                        gr.Textbox(label="途经点 (格式: 每行一个点，lat,lon)", value="31.3384, 121.5019\n31.3387, 121.5018\n31.3384, 121.5023")
+                    ],
+                    outputs=gr.HTML(),
+                    cache_examples=False,
+                    flagging_mode="never",  # 禁用标记按钮
+                    clear_btn=None   # 禁用清除按钮
+                )
             with gr.Column(scale=2):
                 chatbot = gr.Chatbot(type="messages")
                 msg = gr.Textbox(submit_btn=True)
                 clear = gr.Button("清除对话")
-            with gr.Column(scale=1):
+            with gr.Column(scale=1):  
                 log_output = gr.Textbox(label="工具调用 & 调试信息", lines=25)
-        gr.Markdown("# 设计")
+        with gr.Row():
+            gr.Textbox(label="示例输入", value=DEMO_INPUT)
         gr.Image(DESIGN_IMG)
         gr.Markdown(RESULT_MERMAID)
         gr.Image(RESULT_IMG)

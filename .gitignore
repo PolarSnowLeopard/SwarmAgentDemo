@@ -1,4 +1,7 @@
 *.DS_Store
+**/test/
+**/oj_agents_demo/
+**.gradio/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
